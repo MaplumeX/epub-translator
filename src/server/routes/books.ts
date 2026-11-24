@@ -2,12 +2,15 @@ import fs from "node:fs";
 import { Hono } from "hono";
 import { z } from "zod";
 import {
+  buildChapterDocument,
+  buildFallbackChapterNodes,
   exportTranslatedEpub,
   parseEpubBuffer,
   validateTranslatedPlaceholders,
 } from "../../core/epub/index.js";
-import type { OutputMode } from "../../core/types.js";
+import type { ChapterDocumentPayload, OutputMode } from "../../core/types.js";
 import type { AppDatabase } from "../db.js";
+import { EpubAssetCache, getAllowedAssetMime, normalizeAssetZipPath } from "../epubAssets.js";
 import type { TranslationJobManager } from "../jobManager.js";
 
 const UpdateBookSchema = z.object({
@@ -21,6 +24,7 @@ const EditSegmentSchema = z.object({
 
 export function createBooksRoutes(db: AppDatabase, jobs: TranslationJobManager): Hono {
   const app = new Hono();
+  const epubCache = new EpubAssetCache(4);
 
   app.get("/", (c) => {
     return c.json({ books: db.listBooks() });
@@ -71,9 +75,93 @@ export function createBooksRoutes(db: AppDatabase, jobs: TranslationJobManager):
   app.delete("/:id", (c) => {
     const id = c.req.param("id");
     jobs.pauseBook(id);
+    epubCache.invalidate(id);
     const ok = db.deleteBook(id);
     if (!ok) return c.json({ error: "书籍不存在" }, 404);
     return c.json({ deleted: true });
+  });
+
+  app.get("/:id/chapters/:chapterId/document", async (c) => {
+    const bookId = c.req.param("id");
+    const chapterId = c.req.param("chapterId");
+    const chapter = db.getChapter(chapterId);
+    if (!chapter || chapter.bookId !== bookId) {
+      return c.json({ error: "章节不存在" }, 404);
+    }
+
+    const segments = db.listSegments(chapterId, "all");
+    const sourcePath = db.getSourceEpubPath(bookId);
+
+    try {
+      const zip = await epubCache.loadZip(bookId, sourcePath);
+      const entry = zip?.file(chapter.href) ?? null;
+      if (entry) {
+        const xhtml = await entry.async("string");
+        const built = buildChapterDocument(xhtml, {
+          chapterHref: chapter.href,
+          assetBaseUrl: `/api/books/${encodeURIComponent(bookId)}/assets`,
+        });
+        const payload: ChapterDocumentPayload = {
+          chapter,
+          nodes: built.nodes,
+          segments,
+          placeholderNodes: built.placeholderNodes,
+          fallback: false,
+        };
+        return c.json(payload);
+      }
+    } catch {
+      // Fall through to graceful segment-only document synthesis
+    }
+
+    const fallbackPayload: ChapterDocumentPayload = {
+      chapter,
+      nodes: buildFallbackChapterNodes(segments),
+      segments,
+      placeholderNodes: {},
+      fallback: true,
+    };
+    return c.json(fallbackPayload);
+  });
+
+  app.get("/:id/assets/*", async (c) => {
+    const bookId = c.req.param("id");
+    const book = db.getBook(bookId);
+    if (!book) {
+      return c.json({ error: "书籍不存在" }, 404);
+    }
+
+    const marker = "/assets/";
+    const markerIdx = c.req.path.indexOf(marker);
+    const rawRelPath = markerIdx === -1 ? "" : c.req.path.slice(markerIdx + marker.length);
+    const zipPath = normalizeAssetZipPath(rawRelPath);
+    if (!zipPath) {
+      return c.json({ error: "非法资源路径" }, 400);
+    }
+
+    const mimeType = getAllowedAssetMime(zipPath);
+    if (!mimeType) {
+      return c.json({ error: "不支持的资源类型" }, 403);
+    }
+
+    const zip = await epubCache.loadZip(bookId, db.getSourceEpubPath(bookId));
+    const file = zip?.file(zipPath) ?? null;
+    if (!file || file.dir) {
+      return c.json({ error: "资源不存在" }, 404);
+    }
+
+    const bytes = await file.async("uint8array");
+    const headers: Record<string, string> = {
+      "Content-Type": mimeType,
+      "Content-Length": String(bytes.byteLength),
+      "X-Content-Type-Options": "nosniff",
+      "Cache-Control": "private, max-age=3600",
+    };
+    if (mimeType === "image/svg+xml") {
+      headers["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'";
+    }
+
+    return new Response(new Uint8Array(bytes), { status: 200, headers });
   });
 
   app.get("/:id/chapters/:chapterId/segments", (c) => {

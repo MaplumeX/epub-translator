@@ -1,7 +1,7 @@
 import * as cheerio from "cheerio";
 import type { ExtractedSegment, InlinePlaceholder, OutputMode } from "../types.js";
 
-type DomNode = {
+export type DomNode = {
   type: string;
   data?: string;
   tagName?: string;
@@ -10,14 +10,14 @@ type DomNode = {
   parent?: DomNode | null;
 };
 
-type DomElement = DomNode & {
+export type DomElement = DomNode & {
   type: "tag";
   tagName: string;
   attribs: Record<string, string>;
   children: DomNode[];
 };
 
-function isTagElement(node: unknown): node is DomElement {
+export function isTagElement(node: unknown): node is DomElement {
   return typeof node === "object" && node !== null && (node as DomNode).type === "tag" && typeof (node as DomNode).tagName === "string";
 }
 

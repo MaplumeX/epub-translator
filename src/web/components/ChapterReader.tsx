@@ -1,17 +1,32 @@
-import { useState } from "react";
-import { AlertTriangle, FileText, RefreshCw, Type } from "lucide-react";
-import type { BookRecord, ChapterRecord, OutputMode, SegmentRecord } from "../../core/types.js";
-import { SegmentCard } from "./SegmentCard.js";
+import { useEffect, useRef, useState } from "react";
+import { AlertTriangle, FileText, Info, RefreshCw, Type } from "lucide-react";
+import type {
+  BookRecord,
+  ChapterDocumentNode,
+  ChapterRecord,
+  OutputMode,
+  SegmentRecord,
+} from "../../core/types.js";
+import { ChapterDocumentView } from "./ChapterDocumentView.js";
+import { SegmentBlock } from "./SegmentBlock.js";
 
 interface ChapterReaderProps {
   book: BookRecord;
   chapter: ChapterRecord | null;
+  nodes: ChapterDocumentNode[];
   segments: SegmentRecord[];
+  placeholderNodes: Record<string, Record<string, ChapterDocumentNode[]>>;
+  docFallback: boolean;
   filter: "all" | "failed";
   loading: boolean;
   errorMessage: string | null;
   outputMode: OutputMode;
+  highlightedDomPath: string | null;
+  pendingAnchorHash: string | null;
+  onClearPendingAnchor: () => void;
   onChangeFilter: (filter: "all" | "failed") => void;
+  onLocateSegment: (domPath: string) => void;
+  onNavigateChapter: (chapterHref: string, hash?: string) => void;
   onRetryLoad: () => void;
   onSaveSegment: (segmentId: string, translatedTemplate: string) => Promise<void>;
   onRetranslateSegment: (segmentId: string, instruction?: string) => Promise<void>;
@@ -20,20 +35,66 @@ interface ChapterReaderProps {
 export function ChapterReader({
   book,
   chapter,
+  nodes,
   segments,
+  placeholderNodes,
+  docFallback,
   filter,
   loading,
   errorMessage,
   outputMode,
+  highlightedDomPath,
+  pendingAnchorHash,
+  onClearPendingAnchor,
   onChangeFilter,
+  onLocateSegment,
+  onNavigateChapter,
   onRetryLoad,
   onSaveSegment,
   onRetranslateSegment,
 }: ChapterReaderProps) {
   const [useSerif, setUseSerif] = useState(false);
+  const paneRef = useRef<HTMLDivElement | null>(null);
+
+  function scrollToElementId(hash: string) {
+    const container = paneRef.current;
+    if (!container || !hash) return;
+    const escaped = typeof CSS !== "undefined" && typeof CSS.escape === "function"
+      ? CSS.escape(hash)
+      : hash.replace(/["\\]/g, "\\$&");
+    const target = container.querySelector<HTMLElement>(`#${escaped}`);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    target.classList.add("is-anchor-flash");
+    window.setTimeout(() => {
+      target.classList.remove("is-anchor-flash");
+    }, 1600);
+  }
+
+  // Scroll to highlighted segment after returning from failed-list triage
+  useEffect(() => {
+    if (!highlightedDomPath || filter !== "all" || loading) return;
+    const container = paneRef.current;
+    if (!container) return;
+    const target = container.querySelector<HTMLElement>(
+      `[data-dom-path="${highlightedDomPath.replace(/"/g, '\\"')}"]`,
+    );
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [highlightedDomPath, filter, loading]);
+
+  // Scroll to pending cross-chapter anchor after target chapter finishes loading
+  useEffect(() => {
+    if (!pendingAnchorHash || loading) return;
+    scrollToElementId(pendingAnchorHash);
+    onClearPendingAnchor();
+  }, [pendingAnchorHash, loading, onClearPendingAnchor]);
+
+  const failedSegments = segments.filter((s) => s.status === "failed");
 
   return (
-    <div className="reader-scroll-pane">
+    <div className="reader-scroll-pane" ref={paneRef}>
       <div className="reader-column">
         {errorMessage && (
           <div className="global-error-banner" role="alert">
@@ -52,14 +113,16 @@ export function ChapterReader({
           <div className="reader-skeleton" aria-busy="true" aria-label="正在加载章节内容">
             <div className="skel skel-title" />
             <div className="skel skel-subtitle" />
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="skel-card">
-                <div className="skel skel-line-sm" />
-                <div className="skel skel-line-lg" />
-                <div className="skel skel-line-md" />
-                <div className="skel skel-line-lg" />
-              </div>
-            ))}
+            <div className="skel-sheet">
+              <div className="skel skel-heading" />
+              <div className="skel skel-line-lg" />
+              <div className="skel skel-line-lg" />
+              <div className="skel skel-line-md" />
+              <div className="skel skel-spacer" />
+              <div className="skel skel-line-lg" />
+              <div className="skel skel-line-lg" />
+              <div className="skel skel-line-sm" />
+            </div>
           </div>
         ) : !chapter ? (
           <div className="reader-empty-chapter">
@@ -99,7 +162,7 @@ export function ChapterReader({
               )}
 
               <div className="chapter-filter-bar">
-                <div className="filter-tabs" role="tablist" aria-label="段落筛选">
+                <div className="filter-tabs" role="tablist" aria-label="章节视图筛选">
                   <button
                     type="button"
                     role="tab"
@@ -107,7 +170,7 @@ export function ChapterReader({
                     className={`filter-tab ${filter === "all" ? "is-active" : ""}`}
                     onClick={() => onChangeFilter("all")}
                   >
-                    全部段落（{chapter.totalSegments}）
+                    全部内容（{chapter.totalSegments}）
                   </button>
                   <button
                     type="button"
@@ -122,29 +185,64 @@ export function ChapterReader({
               </div>
             </header>
 
-            {segments.length === 0 ? (
+            {docFallback && filter === "all" && (
+              <div className="doc-fallback-notice" role="status">
+                <Info size={14} aria-hidden="true" />
+                <span>未找到原始 EPUB 章节文件，已降级为连续段落流预览。</span>
+              </div>
+            )}
+
+            {filter === "failed" ? (
+              failedSegments.length === 0 ? (
+                <div className="reader-empty-chapter">
+                  <p>
+                    {errorMessage
+                      ? "未能加载章节段落，请点击上方「重试」恢复连接。"
+                      : "本章目前没有失败段落。"}
+                  </p>
+                </div>
+              ) : (
+                <div className="failed-triage-list">
+                  {failedSegments.map((seg) => (
+                    <SegmentBlock
+                      key={seg.id}
+                      segment={seg}
+                      voidNodes={placeholderNodes[seg.domPath]}
+                      chapterHref={chapter.href}
+                      outputMode={outputMode}
+                      useSerif={useSerif}
+                      variant="failed-list"
+                      onSaveEdit={onSaveSegment}
+                      onRetranslate={onRetranslateSegment}
+                      onLocateInSheet={onLocateSegment}
+                      onAnchorClick={scrollToElementId}
+                      onNavigateChapter={onNavigateChapter}
+                    />
+                  ))}
+                </div>
+              )
+            ) : nodes.length === 0 && segments.length === 0 ? (
               <div className="reader-empty-chapter">
                 <p>
                   {errorMessage
-                    ? "未能加载章节段落，请点击上方「重试」恢复连接。"
-                    : filter === "failed"
-                      ? "本章目前没有失败段落。"
-                      : "本章暂无可翻译段落。"}
+                    ? "未能加载章节内容，请点击上方「重试」恢复连接。"
+                    : "本章暂无可展示内容。"}
                 </p>
               </div>
             ) : (
-              <div className="segment-list">
-                {segments.map((seg) => (
-                  <SegmentCard
-                    key={seg.id}
-                    segment={seg}
-                    outputMode={outputMode}
-                    useSerif={useSerif}
-                    onSaveEdit={onSaveSegment}
-                    onRetranslate={onRetranslateSegment}
-                  />
-                ))}
-              </div>
+              <ChapterDocumentView
+                nodes={nodes}
+                segments={segments}
+                placeholderNodes={placeholderNodes}
+                chapterHref={chapter.href}
+                outputMode={outputMode}
+                useSerif={useSerif}
+                highlightedDomPath={highlightedDomPath}
+                onSaveSegment={onSaveSegment}
+                onRetranslateSegment={onRetranslateSegment}
+                onAnchorClick={scrollToElementId}
+                onNavigateChapter={onNavigateChapter}
+              />
             )}
           </>
         )}

@@ -181,6 +181,46 @@ export interface SegmentRecord {
   updatedAt: string;
 }
 
+export interface ChapterLinkMeta {
+  kind: "anchor" | "chapter" | "external";
+  href: string;
+  chapterHref?: string;
+  hash?: string;
+}
+
+export interface ChapterTextNode {
+  kind: "text";
+  text: string;
+}
+
+export interface ChapterElementNode {
+  kind: "element";
+  tagName: string;
+  attrs?: Record<string, string>;
+  link?: ChapterLinkMeta;
+  children: ChapterDocumentNode[];
+}
+
+export interface ChapterSegmentNode {
+  kind: "segment";
+  domPath: string;
+  tagName: string;
+  id?: string;
+  attrs?: Record<string, string>;
+}
+
+export type ChapterDocumentNode = ChapterTextNode | ChapterElementNode | ChapterSegmentNode;
+
+export interface ChapterDocumentPayload {
+  chapter: ChapterRecord;
+  nodes: ChapterDocumentNode[];
+  segments: SegmentRecord[];
+  /** Sanitized AST nodes for each segment's void inline placeholders: domPath -> placeholderId -> nodes */
+  placeholderNodes: Record<string, Record<string, ChapterDocumentNode[]>>;
+  /** True when source.epub or the chapter XHTML was unavailable and nodes were synthesized from segments */
+  fallback: boolean;
+}
+
 export interface PrescanProgressEvent {
   type: "prescan_progress";
   bookId: string;

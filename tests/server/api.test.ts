@@ -225,4 +225,79 @@ describe("Local Hono API + node:sqlite persistence + job lifecycle", () => {
     expect(fs.existsSync(reopened.getBookDir(bookId))).toBe(false);
     reopened.close();
   });
+
+  it("serves sanitized chapter documents, allowlisted EPUB image assets with security headers, and degrades when source.epub is missing", async () => {
+    const dataDir = makeTempDir();
+    const db = new AppDatabase(dataDir);
+    const { app } = createServerApp({
+      db,
+      providerFactory: () => createDeterministicProvider(),
+    });
+
+    const epubBuf = await createSampleEpubBuffer({ version: "3" });
+    const form = new FormData();
+    form.append("file", new File([new Uint8Array(epubBuf)], "reader-test.epub", { type: "application/epub+zip" }));
+    const importRes = await app.request("/api/books/import", { method: "POST", body: form });
+    expect(importRes.status).toBe(201);
+    const imported = (await importRes.json()) as {
+      book: { id: string };
+      chapters: Array<{ id: string }>;
+    };
+    const bookId = imported.book.id;
+    const ch1Id = imported.chapters[0].id;
+
+    // 1. Full sanitized chapter document with rewritten asset URL, <pre>, and void placeholder nodes
+    const docRes = await app.request(`/api/books/${bookId}/chapters/${ch1Id}/document`);
+    expect(docRes.status).toBe(200);
+    const docJson = (await docRes.json()) as {
+      fallback: boolean;
+      nodes: unknown[];
+      segments: Array<{ domPath: string }>;
+      placeholderNodes: Record<string, Record<string, unknown[]>>;
+    };
+    expect(docJson.fallback).toBe(false);
+    expect(docJson.segments).toHaveLength(5);
+    const serializedDoc = JSON.stringify(docJson.nodes);
+    expect(serializedDoc).toContain(`/api/books/${bookId}/assets/OEBPS/images/cover.png`);
+    expect(serializedDoc).toContain("untouchable");
+    expect(docJson.placeholderNodes["seg-1"]?.V2).toBeDefined();
+
+    // 2. Allowlisted PNG & SVG assets served with nosniff + SVG CSP
+    const pngRes = await app.request(`/api/books/${bookId}/assets/OEBPS/images/cover.png`);
+    expect(pngRes.status).toBe(200);
+    expect(pngRes.headers.get("content-type")).toBe("image/png");
+    expect(pngRes.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(Array.from(new Uint8Array(await pngRes.arrayBuffer()))).toEqual([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    ]);
+
+    const svgRes = await app.request(`/api/books/${bookId}/assets/OEBPS/images/diagram.svg`);
+    expect(svgRes.status).toBe(200);
+    expect(svgRes.headers.get("content-type")).toBe("image/svg+xml");
+    expect(svgRes.headers.get("content-security-policy")).toContain("default-src 'none'");
+
+    // 3. Path traversal & non-image EPUB entries rejected
+    const traversalRes = await app.request(`/api/books/${bookId}/assets/..%2F..%2Fetc%2Fpasswd`);
+    expect(traversalRes.status).toBe(400);
+
+    const xhtmlAssetRes = await app.request(`/api/books/${bookId}/assets/OEBPS/text/chapter1.xhtml`);
+    expect(xhtmlAssetRes.status).toBe(403);
+
+    const missingAssetRes = await app.request(`/api/books/${bookId}/assets/OEBPS/images/missing.png`);
+    expect(missingAssetRes.status).toBe(404);
+
+    // 4. Graceful fallback when source.epub disappears on disk
+    fs.unlinkSync(db.getSourceEpubPath(bookId));
+    const fallbackRes = await app.request(`/api/books/${bookId}/chapters/${ch1Id}/document`);
+    expect(fallbackRes.status).toBe(200);
+    const fallbackJson = (await fallbackRes.json()) as {
+      fallback: boolean;
+      nodes: Array<{ kind: string; domPath?: string }>;
+      segments: Array<{ domPath: string }>;
+    };
+    expect(fallbackJson.fallback).toBe(true);
+    expect(fallbackJson.nodes.map((n) => n.domPath)).toEqual(fallbackJson.segments.map((s) => s.domPath));
+
+    db.close();
+  });
 });
