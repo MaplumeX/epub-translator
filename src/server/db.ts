@@ -460,9 +460,12 @@ export class AppDatabase {
   }
 
   listBooks(): BookRecord[] {
+    // Aggregates chapterCount via subquery so library overview stays zero-migration for existing DBs.
+    // See ADR 2026-11-24-book-library-management.
     const rows = this.db
       .prepare(`
         SELECT b.*,
+          (SELECT COUNT(*) FROM chapters c WHERE c.book_id = b.id) AS chapter_count,
           (SELECT COUNT(*) FROM segments s WHERE s.book_id = b.id) AS total_segments,
           (SELECT COUNT(*) FROM segments s WHERE s.book_id = b.id AND s.status = 'translated') AS translated_segments,
           (SELECT COUNT(*) FROM segments s WHERE s.book_id = b.id AND s.status = 'failed') AS failed_segments
@@ -477,6 +480,7 @@ export class AppDatabase {
     const row = this.db
       .prepare(`
         SELECT b.*,
+          (SELECT COUNT(*) FROM chapters c WHERE c.book_id = b.id) AS chapter_count,
           (SELECT COUNT(*) FROM segments s WHERE s.book_id = b.id) AS total_segments,
           (SELECT COUNT(*) FROM segments s WHERE s.book_id = b.id AND s.status = 'translated') AS translated_segments,
           (SELECT COUNT(*) FROM segments s WHERE s.book_id = b.id AND s.status = 'failed') AS failed_segments
@@ -800,6 +804,7 @@ export class AppDatabase {
       outputMode: (r.output_mode === "translated_only" ? "translated_only" : "bilingual") as OutputMode,
       prescanEnabled: Boolean(r.prescan_enabled),
       prescanCompleted: Boolean(r.prescan_completed),
+      chapterCount: Number(r.chapter_count ?? 0),
       totalSegments: Number(r.total_segments ?? 0),
       translatedSegments: Number(r.translated_segments ?? 0),
       failedSegments: Number(r.failed_segments ?? 0),

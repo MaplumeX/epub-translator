@@ -123,12 +123,23 @@ describe("Local Hono API + node:sqlite persistence + job lifecycle", () => {
     const importRes = await app.request("/api/books/import", { method: "POST", body: form });
     expect(importRes.status).toBe(201);
     const imported = (await importRes.json()) as {
-      book: { id: string; totalSegments: number };
+      book: { id: string; chapterCount: number; totalSegments: number };
       chapters: Array<{ id: string }>;
     };
     const bookId = imported.book.id;
     const ch1Id = imported.chapters[0].id;
+    expect(imported.book.chapterCount).toBe(imported.chapters.length);
+    expect(imported.book.chapterCount).toBeGreaterThan(0);
     expect(imported.book.totalSegments).toBe(8);
+
+    // List books includes chapterCount aggregation for library management
+    const listRes = await app.request("/api/books");
+    expect(listRes.status).toBe(200);
+    const listJson = (await listRes.json()) as {
+      books: Array<{ id: string; chapterCount: number; totalSegments: number }>;
+    };
+    expect(listJson.books).toHaveLength(1);
+    expect(listJson.books[0].chapterCount).toBe(imported.chapters.length);
 
     // 3. Enable 7C-Lite prescan & run translation via job manager (awaited deterministically)
     await app.request(`/api/books/${bookId}`, {
@@ -192,7 +203,26 @@ describe("Local Hono API + node:sqlite persistence + job lifecycle", () => {
 
     const reopened = new AppDatabase(dataDir);
     expect(reopened.getBook(bookId)!.status).toBe("paused");
+    expect(reopened.getBook(bookId)!.chapterCount).toBe(imported.chapters.length);
     expect(reopened.getSegment(segsJson.segments[0].id)!.status).toBe("pending");
+
+    // 7. Reset translations and delete book via HTTP API
+    const { app: reopenedApp } = createServerApp({ db: reopened });
+    const resetRes = await reopenedApp.request(`/api/books/${bookId}/translate/reset`, {
+      method: "POST",
+    });
+    expect(resetRes.status).toBe(200);
+    const resetJson = (await resetRes.json()) as {
+      book: { status: string; translatedSegments: number; chapterCount: number };
+    };
+    expect(resetJson.book.status).toBe("idle");
+    expect(resetJson.book.translatedSegments).toBe(0);
+    expect(resetJson.book.chapterCount).toBe(imported.chapters.length);
+
+    const deleteRes = await reopenedApp.request(`/api/books/${bookId}`, { method: "DELETE" });
+    expect(deleteRes.status).toBe(200);
+    expect(reopened.listBooks()).toHaveLength(0);
+    expect(fs.existsSync(reopened.getBookDir(bookId))).toBe(false);
     reopened.close();
   });
 

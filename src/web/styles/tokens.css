@@ -151,6 +151,7 @@
   --control-lg: 44px;
   --sidebar-width: 280px;
   --measure-reading: 780px;
+  --measure-library: 960px;
   --measure-empty: 520px;
 
   /* Active radii (strictly 2 steps) */

@@ -139,6 +139,7 @@ export interface BookRecord {
   outputMode: OutputMode;
   prescanEnabled: boolean;
   prescanCompleted: boolean;
+  chapterCount: number;
   totalSegments: number;
   translatedSegments: number;
   failedSegments: number;

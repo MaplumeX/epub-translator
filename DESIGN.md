@@ -24,14 +24,15 @@ Defined in `src/web/styles/tokens.css` (components consume semantic variables ex
 - **Typography**: Fixed scale `12 / 14 / 16 / 18 / 20 / 24 / 30px`; weights `400 / 500 / 600 / 700` only; English source `15px / 1.62`, Simplified Chinese prose `16px / 1.72`, monospace for inline protected code tokens.
 - **Spacing & Controls**: `4 / 8 / 12 / 16 / 24 / 32 / 48 / 64px`; control heights `32 / 38 / 44px`; strictly 2 active radii (`6px`, `10px`); `z-index` layers `0 / 10 / 20 / 30 / 40 / 50`.
 - **Action Pyramid**: 1 solid primary button per view (`--accent`), outline secondary buttons (`--surface-raised`), ghost tertiary actions, and demoted destructive triggers promoted to `--status-danger-solid` only inside confirmation modals.
-- **Breakpoints**: Desktop workbench `>= 1024px` (`100dvh`, fixed `280px` sidebar + bounded `780px` reading pane); `< 1024px` unlocks `100dvh` into single-column document flow with slide-over chapter drawer.
+- **Breakpoints**: Desktop workbench `>= 1024px` (`100dvh`, fixed `280px` sidebar + bounded `780px` reading pane; dedicated Book Library view bounded to `960px` via `--measure-library`); `< 1024px` unlocks `100dvh` into single-column document flow with slide-over chapter drawer.
 
 ## 3. Component Index & State Matrix
 
 | Component | Path | States Covered | Token Bindings |
 |---|---|---|---|
 | Design Tokens & Base Primitives | `src/web/styles/tokens.css`, `src/web/styles/base.css` | light, dark, hover, focus-visible, disabled, reduced-motion | `--surface*`, `--text*`, `--accent*`, `--status-*` |
-| Workbench Shell & Sidebar | `src/web/components/WorkbenchShell.tsx`, `src/web/components/Sidebar.tsx`, `src/web/components/ThemeToggle.tsx` | default, empty, loading, error, mobile `<1024px` drawer | `--sidebar-width`, `--surface`, `--border`, `--accent` |
+| Workbench Shell & Sidebar | `src/web/components/WorkbenchShell.tsx`, `src/web/components/Sidebar.tsx`, `src/web/components/ThemeToggle.tsx` | empty, library, reader, loading, error, mobile `<1024px` drawer | `--sidebar-width`, `--measure-library`, `--surface`, `--border`, `--accent` |
+| Book Library Management View | `src/web/components/BookLibrary.tsx`, `src/web/utils/library.ts` | default (multi-book), filtered-empty, loading-skeleton, error, batch-import-error, drag-over, recent-highlight, edge-overflow, `<1024px` stacked | `--measure-library`, `--surface-raised`, `--accent-subtle`, `--status-*` |
 | Empty Import Stage | `src/web/components/BookImportEmpty.tsx` | empty, drag-over, uploading, api-ready, api-unconfigured, error | `--measure-empty`, `--accent-subtle`, `--status-*` |
 | Top Action Bar | `src/web/components/TopActionBar.tsx` | idle, prescanning, translating, paused, completed, failed-count | `--surface-raised`, `--accent`, `--status-danger-*` |
 | Continuous Chapter Reader & Segment Flow | `src/web/components/ChapterReader.tsx`, `src/web/components/ChapterDocumentView.tsx`, `src/web/components/SegmentBlock.tsx`, `src/web/components/RichContent.tsx` | default, continuous-sheet, bilingual, translated-only, source-peek, pending, translating, translated, failed-inline, failed-triage-list, inline-edit, polish-retranslate, loading-skeleton, fallback-notice, edge-overflow | `--measure-reading`, `--leading-cjk`, `--code-bg`, `--status-danger-*` |

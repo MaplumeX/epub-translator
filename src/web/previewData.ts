@@ -8,12 +8,23 @@ import type {
 } from "../core/types.js";
 
 export type PreviewStateMode = "default" | "empty" | "loading" | "error";
+export type PreviewViewMode = "library" | "reader";
 
 export function detectPreviewState(): PreviewStateMode | null {
   if (typeof window === "undefined") return null;
   const states = new URLSearchParams(window.location.search).getAll("state");
   const last = states[states.length - 1];
   if (last === "default" || last === "empty" || last === "loading" || last === "error") {
+    return last;
+  }
+  return null;
+}
+
+export function detectPreviewView(): PreviewViewMode | null {
+  if (typeof window === "undefined") return null;
+  const views = new URLSearchParams(window.location.search).getAll("view");
+  const last = views[views.length - 1];
+  if (last === "library" || last === "reader") {
     return last;
   }
   return null;
@@ -87,11 +98,64 @@ export const PREVIEW_BOOKS: BookRecord[] = [
     outputMode: "bilingual",
     prescanEnabled: true,
     prescanCompleted: true,
+    chapterCount: 4,
     totalSegments: 48,
     translatedSegments: 31,
     failedSegments: 1,
     createdAt: "2026-11-24T07:30:00.000Z",
     updatedAt: "2026-11-24T08:12:00.000Z",
+  },
+  {
+    id: "preview-book-2",
+    title: "Letters from a Northern Workshop",
+    translatedTitle: "北方工坊书简",
+    author: "Henrik Lindholm",
+    sourceLanguage: "en",
+    targetLanguage: "简体中文",
+    description: "Essays on bookbinding, paper grain, and quiet craftsmanship.",
+    translatedDescription: "关于书籍装帧、纸张纹路与沉静手艺的随笔集。",
+    epubVersion: "3",
+    opfPath: "OEBPS/content.opf",
+    tocNcxPath: "OEBPS/toc.ncx",
+    navXhtmlPath: "OEBPS/nav.xhtml",
+    sourceFilename: "letters-from-northern-workshop.epub",
+    fileSizeBytes: 946_200,
+    status: "completed",
+    outputMode: "bilingual",
+    prescanEnabled: false,
+    prescanCompleted: false,
+    chapterCount: 12,
+    totalSegments: 164,
+    translatedSegments: 164,
+    failedSegments: 0,
+    createdAt: "2026-11-21T10:00:00.000Z",
+    updatedAt: "2026-11-23T19:40:00.000Z",
+  },
+  {
+    id: "preview-book-3",
+    title: "Foundations of Distributed State Machines and Deterministic Simulation Testing in Practice",
+    translatedTitle: null,
+    author: "M. K. Takahashi",
+    sourceLanguage: "en",
+    targetLanguage: "简体中文",
+    description: "An architectural treatise on deterministic testing for fault-tolerant services.",
+    translatedDescription: null,
+    epubVersion: "2",
+    opfPath: "content.opf",
+    tocNcxPath: "toc.ncx",
+    navXhtmlPath: null,
+    sourceFilename: "distributed-state-machines-deterministic-simulation-testing.epub",
+    fileSizeBytes: 4_310_800,
+    status: "idle",
+    outputMode: "translated_only",
+    prescanEnabled: false,
+    prescanCompleted: false,
+    chapterCount: 9,
+    totalSegments: 215,
+    translatedSegments: 0,
+    failedSegments: 0,
+    createdAt: "2026-11-24T08:05:00.000Z",
+    updatedAt: "2026-11-24T08:05:00.000Z",
   },
 ];
 

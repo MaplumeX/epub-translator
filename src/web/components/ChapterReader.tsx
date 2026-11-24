@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, FileText, Info, RefreshCw, Trash2, Type } from "lucide-react";
+import { AlertTriangle, FileText, Info, RefreshCw, Type } from "lucide-react";
 import type {
   BookRecord,
   ChapterDocumentNode,
@@ -30,8 +30,6 @@ interface ChapterReaderProps {
   onRetryLoad: () => void;
   onSaveSegment: (segmentId: string, translatedTemplate: string) => Promise<void>;
   onRetranslateSegment: (segmentId: string, instruction?: string) => Promise<void>;
-  onRequestResetBook: () => void;
-  onRequestDeleteBook: () => void;
 }
 
 export function ChapterReader({
@@ -54,8 +52,6 @@ export function ChapterReader({
   onRetryLoad,
   onSaveSegment,
   onRetranslateSegment,
-  onRequestResetBook,
-  onRequestDeleteBook,
 }: ChapterReaderProps) {
   const [useSerif, setUseSerif] = useState(false);
   const paneRef = useRef<HTMLDivElement | null>(null);
@@ -149,21 +145,6 @@ export function ChapterReader({
                   >
                     <Type size={13} aria-hidden="true" />
                     <span>{useSerif ? "衬线体" : "无衬线"}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-tertiary btn-sm"
-                    onClick={onRequestResetBook}
-                  >
-                    重置译文
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-tertiary btn-sm"
-                    onClick={onRequestDeleteBook}
-                  >
-                    <Trash2 size={13} aria-hidden="true" />
-                    <span>删除本书</span>
                   </button>
                 </div>
               </div>

@@ -15,7 +15,7 @@ The frontend (`src/web/`) implements a **Warm Editorial / Bookbinding** design s
 - **Keep**: Fixed left chapter navigation + bounded right reading pane muscle memory.
 - **Break**: Replace dense desktop toolbars and cool grey forms with quiet paper-like surfaces and inline editorial annotations.
 - **Visual thesis**: Warm rag-paper light surfaces (`#f9f8f6` / `#ffffff`) with deep charcoal-ink typography and a single restrained Terracotta Crimson accent; dark mode flips strictly via `[data-theme="dark"]` semantic tokens to warm charcoal surfaces (`#211d17` / `#3c352b`) with `1px` warm borders.
-- **Content plan**: When no book is loaded, chapter and task chrome stay hidden and a centered `520px` EPUB dropzone with an API readiness banner takes the stage. With a book active, the shell renders a compact top action bar, a fixed `280px` left chapter tree, and a `max-width: 780px` bilingual proofreading flow.
+- **Content plan**: When no book is loaded, chapter and task chrome stay hidden and a centered `520px` EPUB dropzone with an API readiness banner takes the stage. When books exist, the default top-level view is the bounded `max-width: 960px` book library (see [the Book Library management view](../feature/2026-11-24-book-library-management.md)). With a book open in the reader, the shell renders a compact top action bar, a fixed `280px` left chapter tree, and a `max-width: 780px` bilingual proofreading flow.
 - **Interaction thesis**: Hover/focus on a paragraph reveals lightweight inline edit and polish re-translate actions (`opacity`/`transform`, `150ms ease-out`); reduced-motion users receive instant opacity transitions without motion.
 
 ### Programmatic 9-Step Color Ramps & Semantic Tokens
