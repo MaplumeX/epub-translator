@@ -1,0 +1,40 @@
+{
+  "version": 2,
+  "skills": {
+    "mm-archive": {
+      "source": "MaplumeX/M-METHOD",
+      "commit": "dc4f81044a5738e3e626cff8651e0d8712a88733",
+      "sourceType": "github",
+      "skillPath": "skills/mm-archive/SKILL.md",
+      "computedHash": "f1514256e1c58db5797f9afdef622e68e382b58564fcf44f52095f39c685a070"
+    },
+    "mm-implement": {
+      "source": "MaplumeX/M-METHOD",
+      "commit": "dc4f81044a5738e3e626cff8651e0d8712a88733",
+      "sourceType": "github",
+      "skillPath": "skills/mm-implement/SKILL.md",
+      "computedHash": "ed7adf0b4fee631f550fe85af178a8e2a522e0481ec3ba2a23b9495661cf2127"
+    },
+    "mm-plan": {
+      "source": "MaplumeX/M-METHOD",
+      "commit": "dc4f81044a5738e3e626cff8651e0d8712a88733",
+      "sourceType": "github",
+      "skillPath": "skills/mm-plan/SKILL.md",
+      "computedHash": "d7d04516f62e2a8fec17238686cdfa060174ab788311d900d911a5dec63aabc8"
+    },
+    "mm-setup": {
+      "source": "MaplumeX/M-METHOD",
+      "commit": "dc4f81044a5738e3e626cff8651e0d8712a88733",
+      "sourceType": "github",
+      "skillPath": "skills/mm-setup/SKILL.md",
+      "computedHash": "ab7acd37d359c25929a6a3c99e852b8419d525a0b13660fb607d8b8087552cf3"
+    },
+    "mm-ui": {
+      "source": "MaplumeX/M-METHOD",
+      "commit": "dc4f81044a5738e3e626cff8651e0d8712a88733",
+      "sourceType": "github",
+      "skillPath": "skills/mm-ui/SKILL.md",
+      "computedHash": "7f68a9bc145b0abb9056f565517811f0bf83c81c2340a5d70ec944370a4e43f0"
+    }
+  }
+}
