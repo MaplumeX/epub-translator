@@ -1,5 +1,6 @@
 import type {
   BookRecord,
+  ChapterDocumentPayload,
   ChapterRecord,
   GlossaryTerm,
   OutputMode,
@@ -53,6 +54,12 @@ export const api = {
   ): Promise<{ chapter: ChapterRecord; segments: SegmentRecord[] }> {
     return requestJson(
       `/api/books/${encodeURIComponent(bookId)}/chapters/${encodeURIComponent(chapterId)}/segments?filter=${filter}`,
+    );
+  },
+
+  getChapterDocument(bookId: string, chapterId: string): Promise<ChapterDocumentPayload> {
+    return requestJson(
+      `/api/books/${encodeURIComponent(bookId)}/chapters/${encodeURIComponent(chapterId)}/document`,
     );
   },
 

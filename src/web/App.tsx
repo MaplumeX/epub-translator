@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type {
   BookRecord,
   BookSseEvent,
+  ChapterDocumentNode,
   ChapterRecord,
   GlossaryTerm,
   OutputMode,
@@ -23,8 +24,10 @@ import { useTheme } from "./hooks/useTheme.js";
 import {
   detectPreviewState,
   PREVIEW_BOOKS,
+  PREVIEW_CHAPTER_NODES,
   PREVIEW_CHAPTERS,
   PREVIEW_GLOSSARY,
+  PREVIEW_PLACEHOLDER_NODES,
   PREVIEW_PROVIDERS,
   PREVIEW_SEGMENTS,
 } from "./previewData.js";
@@ -53,6 +56,13 @@ export function App() {
       ? PREVIEW_CHAPTERS[1].id
       : null,
   );
+  const [chapterNodes, setChapterNodes] = useState<ChapterDocumentNode[]>(() =>
+    previewState === "default" ? PREVIEW_CHAPTER_NODES : [],
+  );
+  const [placeholderNodes, setPlaceholderNodes] = useState<
+    Record<string, Record<string, ChapterDocumentNode[]>>
+  >(() => (previewState === "default" ? PREVIEW_PLACEHOLDER_NODES : {}));
+  const [docFallback, setDocFallback] = useState(false);
   const [segments, setSegments] = useState<SegmentRecord[]>(() =>
     previewState === "default" ? PREVIEW_SEGMENTS : [],
   );
@@ -64,6 +74,8 @@ export function App() {
   );
 
   const [segmentFilter, setSegmentFilter] = useState<"all" | "failed">("all");
+  const [highlightedDomPath, setHighlightedDomPath] = useState<string | null>(null);
+  const [pendingAnchorHash, setPendingAnchorHash] = useState<string | null>(null);
   const [loadingReader, setLoadingReader] = useState(previewState === "loading");
   const [uploading, setUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(
@@ -150,17 +162,20 @@ export function App() {
     }
   }, [activeBookId, loadBookDetails, previewState]);
 
-  const loadSegments = useCallback(
-    async (bookId: string, chapterId: string, filter: "all" | "failed") => {
+  const loadChapterDocument = useCallback(
+    async (bookId: string, chapterId: string) => {
       if (previewState) return;
       setLoadingReader(true);
       setErrorMessage(null);
       try {
-        const { chapter, segments: list } = await api.listSegments(bookId, chapterId, filter);
-        setChapters((prev) => prev.map((c) => (c.id === chapter.id ? chapter : c)));
-        setSegments(list);
+        const doc = await api.getChapterDocument(bookId, chapterId);
+        setChapters((prev) => prev.map((c) => (c.id === doc.chapter.id ? doc.chapter : c)));
+        setChapterNodes(doc.nodes);
+        setPlaceholderNodes(doc.placeholderNodes);
+        setDocFallback(doc.fallback);
+        setSegments(doc.segments);
       } catch (err) {
-        setErrorMessage(err instanceof Error ? err.message : "加载章节段落失败");
+        setErrorMessage(err instanceof Error ? err.message : "加载章节内容失败");
       } finally {
         setLoadingReader(false);
       }
@@ -170,9 +185,9 @@ export function App() {
 
   useEffect(() => {
     if (activeBookId && activeChapterId && !previewState) {
-      void loadSegments(activeBookId, activeChapterId, segmentFilter);
+      void loadChapterDocument(activeBookId, activeChapterId);
     }
-  }, [activeBookId, activeChapterId, segmentFilter, loadSegments, previewState]);
+  }, [activeBookId, activeChapterId, loadChapterDocument, previewState]);
 
   const handleSseEvent = useCallback(
     (event: BookSseEvent) => {
@@ -224,9 +239,6 @@ export function App() {
           setSegments((prev) => {
             const exists = prev.some((s) => s.id === event.segment.id);
             if (!exists) return prev;
-            if (segmentFilter === "failed" && event.segment.status !== "failed") {
-              return prev.filter((s) => s.id !== event.segment.id);
-            }
             return prev.map((s) => (s.id === event.segment.id ? event.segment : s));
           });
         }
@@ -450,7 +462,7 @@ export function App() {
         setBooks((prev) => prev.map((b) => (b.id === book.id ? book : b)));
         setChapters(chList);
         if (activeChapterId) {
-          await loadSegments(activeBook.id, activeChapterId, segmentFilter);
+          await loadChapterDocument(activeBook.id, activeChapterId);
         }
         showToast("已重置全书译文进度");
       } else {
@@ -460,6 +472,8 @@ export function App() {
         setActiveBookId(remaining[0]?.id ?? null);
         if (remaining.length === 0) {
           setChapters([]);
+          setChapterNodes([]);
+          setPlaceholderNodes({});
           setSegments([]);
           setGlossary([]);
         }
@@ -473,10 +487,35 @@ export function App() {
     }
   }
 
-  const displayedSegments =
-    previewState && segmentFilter === "failed"
-      ? segments.filter((s) => s.status === "failed")
-      : segments;
+  const handleLocateSegment = useCallback((domPath: string) => {
+    setSegmentFilter("all");
+    setHighlightedDomPath(domPath);
+    window.setTimeout(() => {
+      setHighlightedDomPath((curr) => (curr === domPath ? null : curr));
+    }, 1800);
+  }, []);
+
+  const handleNavigateChapter = useCallback(
+    (chapterHref: string, hash?: string) => {
+      const target = chapters.find((c) => c.href === chapterHref);
+      if (!target) {
+        showToast("未在目录中找到对应章节");
+        return;
+      }
+      setSegmentFilter("all");
+      if (target.id !== activeChapterId) {
+        setActiveChapterId(target.id);
+      }
+      if (hash) {
+        setPendingAnchorHash(hash);
+      }
+    },
+    [activeChapterId, chapters, showToast],
+  );
+
+  const handleClearPendingAnchor = useCallback(() => {
+    setPendingAnchorHash(null);
+  }, []);
 
   return (
     <>
@@ -540,15 +579,23 @@ export function App() {
           <ChapterReader
             book={activeBook}
             chapter={activeChapter}
-            segments={displayedSegments}
+            nodes={chapterNodes}
+            segments={segments}
+            placeholderNodes={placeholderNodes}
+            docFallback={docFallback}
             filter={segmentFilter}
             loading={loadingReader}
             errorMessage={errorMessage}
             outputMode={activeBook.outputMode}
+            highlightedDomPath={highlightedDomPath}
+            pendingAnchorHash={pendingAnchorHash}
+            onClearPendingAnchor={handleClearPendingAnchor}
             onChangeFilter={setSegmentFilter}
+            onLocateSegment={handleLocateSegment}
+            onNavigateChapter={handleNavigateChapter}
             onRetryLoad={() => {
               if (activeBookId && activeChapterId) {
-                void loadSegments(activeBookId, activeChapterId, segmentFilter);
+                void loadChapterDocument(activeBookId, activeChapterId);
               } else {
                 void loadBootstrap();
               }

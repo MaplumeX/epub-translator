@@ -46,6 +46,7 @@ export async function createSampleEpubBuffer(options: SampleEpubOptions = {}): P
     <item id="ch1" href="text/chapter1.xhtml" media-type="application/xhtml+xml"/>
     <item id="ch2" href="text/chapter2.xhtml" media-type="application/xhtml+xml"/>
     <item id="cover-img" href="images/cover.png" media-type="image/png"/>
+    <item id="diag-svg" href="images/diagram.svg" media-type="image/svg+xml"/>
   </manifest>
   <spine toc="ncx">
     ${version === "3" ? '<itemref idref="nav" linear="no"/>' : ""}
@@ -105,6 +106,7 @@ export async function createSampleEpubBuffer(options: SampleEpubOptions = {}): P
     <h1>Chapter 1: Foundations</h1>
     <p>Call <code>RaftNode.appendEntries()</code> with <em>strict ordering</em><a epub:type="noteref" href="#fn1">1</a> before persisting logs.</p>
     <pre><code>function untouchable(x) { return x * 2; }</code></pre>
+    <figure><img src="../images/cover.png" alt="Cluster cover" /></figure>
     <p>The latency bound <math xmlns="http://www.w3.org/1998/Math/MathML"><mi>O</mi><mo>(</mo><mi>n</mi><mo>)</mo></math> holds when <a href="chapter2.xhtml">quorum consensus</a> succeeds.</p>
     <ol>
       <li>First invariant keeps <strong>durable state</strong> safe.</li>
@@ -135,6 +137,10 @@ export async function createSampleEpubBuffer(options: SampleEpubOptions = {}): P
   zip.file(
     "OEBPS/images/cover.png",
     Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  );
+  zip.file(
+    "OEBPS/images/diagram.svg",
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24"/></svg>',
   );
 
   return zip.generateAsync({ type: "nodebuffer" });

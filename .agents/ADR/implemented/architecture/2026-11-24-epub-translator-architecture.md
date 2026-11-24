@@ -28,7 +28,7 @@ The application is implemented as a single-repository TypeScript local Web appli
    - `TranslationJobManager` (`src/server/jobManager.ts`) commits each settled segment transactionally, streams live progress over SSE (`/api/books/:id/events`), and on server startup resets stale `translating` segments to `pending` and interrupted books to `paused` for safe resume.
 
 3. **Two-Column Proofreading Workbench (`src/web/`)**:
-   - React 19 + Vite frontend styled per [the Warm Editorial design system](../design/2026-11-24-warm-editorial-design-system.md).
+   - React 19 + Vite frontend styled per [the Warm Editorial design system](../design/2026-11-24-warm-editorial-design-system.md), rendering full chapters as a continuous reading sheet with local EPUB asset proxying per [the continuous chapter reader decision](../feature/2026-11-24-continuous-chapter-reader.md).
 
 ## Alternatives considered
 

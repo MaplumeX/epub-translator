@@ -2,11 +2,14 @@ import * as cheerio from "cheerio";
 import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
 import {
+  buildChapterDocument,
   exportTranslatedEpub,
+  extractChapterSegments,
   parseEpubBuffer,
   restoreTemplateToXhtml,
   validateTranslatedPlaceholders,
 } from "../../src/core/epub/index.js";
+import type { ChapterDocumentNode } from "../../src/core/types.js";
 import { createSampleEpubBuffer } from "../fixtures/makeEpub.js";
 
 describe("EPUB 2/3 parser, placeholder fidelity, and dual-mode exporter", () => {
@@ -225,5 +228,104 @@ describe("EPUB 2/3 parser, placeholder fidelity, and dual-mode exporter", () => 
     expect(ch1Out).toContain("<h1>第 1 章：基础</h1>");
     expect(ch1Out).toContain("<code>RaftNode.appendEntries()</code>");
     expect(ch1Out).toContain("function untouchable(x) { return x * 2; }");
+  });
+
+  it("builds a sanitized chapter document tree with 1:1 domPath anchors, rewritten assets, and XSS stripping", () => {
+    const xhtml = `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+  <head><title>Doc Test</title><style>body { color: #000; }</style></head>
+  <body>
+    <h1 id="top" style="color:red" onclick="alert(1)">Title</h1>
+    <script>window.__xss = true;</script>
+    <p>See <code>fn()</code> and footnote<a epub:type="noteref" href="#fn1">1</a> with <a href="javascript:alert(2)">bad link</a>.</p>
+    <figure>
+      <img src="../images/diagram.png" alt="Architecture" onclick="evil()" />
+      <figcaption>Figure 1: Pipeline</figcaption>
+    </figure>
+    <pre><code>const x = 1 &lt; 2;\nreturn x;</code></pre>
+    <table>
+      <tbody>
+        <tr><th colspan="2">Summary</th></tr>
+        <tr><td>Cell A</td><td>Cell B</td></tr>
+      </tbody>
+    </table>
+    <svg viewBox="0 0 100 40" stroke-width="2"><script>bad()</script><rect x="0" y="0" width="100" height="40" /></svg>
+    <math xmlns="http://www.w3.org/1998/Math/MathML"><mi>E</mi><mo>=</mo><mi>m</mi><msup><mi>c</mi><mn>2</mn></msup></math>
+    <aside id="fn1"><p>Footnote text linking to <a href="chapter2.xhtml#sec-a">next chapter</a>.</p></aside>
+  </body>
+</html>`;
+
+    const segments = extractChapterSegments(xhtml);
+    const built = buildChapterDocument(xhtml, {
+      chapterHref: "OEBPS/text/chapter1.xhtml",
+      assetBaseUrl: "/api/books/book-1/assets",
+    });
+
+    function collectSegmentPaths(nodes: ChapterDocumentNode[]): string[] {
+      const paths: string[] = [];
+      for (const n of nodes) {
+        if (n.kind === "segment") paths.push(n.domPath);
+        else if (n.kind === "element") paths.push(...collectSegmentPaths(n.children));
+      }
+      return paths;
+    }
+
+    function findElements(nodes: ChapterDocumentNode[], tag: string): Array<Extract<ChapterDocumentNode, { kind: "element" }>> {
+      const found: Array<Extract<ChapterDocumentNode, { kind: "element" }>> = [];
+      for (const n of nodes) {
+        if (n.kind === "element") {
+          if (n.tagName === tag) found.push(n);
+          found.push(...findElements(n.children, tag));
+        }
+      }
+      return found;
+    }
+
+    // 1:1 alignment with extractChapterSegments
+    expect(collectSegmentPaths(built.nodes)).toEqual(segments.map((s) => s.domPath));
+
+    // XSS & style stripping
+    const serialized = JSON.stringify(built);
+    expect(serialized).not.toContain("__xss");
+    expect(serialized).not.toContain("onclick");
+    expect(serialized).not.toContain("javascript:");
+    expect(serialized).not.toContain("color:red");
+    expect(findElements(built.nodes, "script")).toHaveLength(0);
+    expect(findElements(built.nodes, "style")).toHaveLength(0);
+
+    // Rewritten image URL
+    const imgs = findElements(built.nodes, "img");
+    expect(imgs).toHaveLength(1);
+    expect(imgs[0].attrs?.src).toBe("/api/books/book-1/assets/OEBPS/images/diagram.png");
+    expect(imgs[0].attrs?.alt).toBe("Architecture");
+
+    // Retained <pre>, <table>, <svg> (camelCase attrs), <math>
+    expect(findElements(built.nodes, "pre")).toHaveLength(1);
+    expect(findElements(built.nodes, "table")).toHaveLength(1);
+    const svgs = findElements(built.nodes, "svg");
+    expect(svgs).toHaveLength(1);
+    expect(svgs[0].attrs?.viewBox).toBe("0 0 100 40");
+    expect(svgs[0].attrs?.strokeWidth).toBe("2");
+    expect(findElements(built.nodes, "math")).toHaveLength(1);
+
+    // Table header colspan preserved on segment node
+    const tableRowSegments = findElements(built.nodes, "tr")[0].children;
+    expect(tableRowSegments[0]).toMatchObject({
+      kind: "segment",
+      tagName: "th",
+      attrs: { colSpan: "2" },
+    });
+
+    // Sanitized void placeholder nodes include code chip and noteref anchor
+    expect(built.placeholderNodes["seg-1"]?.V1?.[0]).toMatchObject({
+      kind: "element",
+      tagName: "code",
+    });
+    expect(built.placeholderNodes["seg-1"]?.V2?.[0]).toMatchObject({
+      kind: "element",
+      tagName: "a",
+      attrs: { "data-noteref": "true" },
+      link: { kind: "anchor", href: "#fn1", hash: "fn1" },
+    });
   });
 });

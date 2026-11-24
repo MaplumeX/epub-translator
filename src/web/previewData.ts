@@ -1,5 +1,6 @@
 import type {
   BookRecord,
+  ChapterDocumentNode,
   ChapterRecord,
   GlossaryTerm,
   ProviderPresetPublic,
@@ -263,6 +264,210 @@ export const PREVIEW_SEGMENTS: SegmentRecord[] = [
     errorMessage: null,
     retryCount: 0,
     updatedAt: "2026-11-24T08:12:00.000Z",
+  },
+  {
+    id: "preview-seg-5",
+    bookId: "preview-book-1",
+    chapterId: "preview-ch-1",
+    orderIndex: 5,
+    domPath: "seg-5",
+    tagName: "p",
+    sourceTemplate:
+      "[1] Quorum intersection guarantees that any two majority subsets share at least one voting replica.",
+    sourcePlain:
+      "[1] Quorum intersection guarantees that any two majority subsets share at least one voting replica.",
+    sourceHtml:
+      "[1] Quorum intersection guarantees that any two majority subsets share at least one voting replica.",
+    placeholders: [],
+    translatedTemplate:
+      "[1] 法定人数交集性质保证任意两个多数派子集至少共享一个具有投票权的副本。",
+    translatedPlain:
+      "[1] 法定人数交集性质保证任意两个多数派子集至少共享一个具有投票权的副本。",
+    status: "translated",
+    errorMessage: null,
+    retryCount: 0,
+    updatedAt: "2026-11-24T08:12:15.000Z",
+  },
+];
+
+export const PREVIEW_PLACEHOLDER_NODES: Record<string, Record<string, ChapterDocumentNode[]>> = {
+  "seg-1": {
+    V1: [
+      {
+        kind: "element",
+        tagName: "code",
+        children: [{ kind: "text", text: "RaftNode.appendEntries()" }],
+      },
+    ],
+    V2: [
+      {
+        kind: "element",
+        tagName: "a",
+        attrs: { "data-noteref": "true" },
+        link: { kind: "anchor", href: "#fn1", hash: "fn1" },
+        children: [{ kind: "text", text: "[1]" }],
+      },
+    ],
+  },
+  "seg-2": {
+    V1: [
+      {
+        kind: "element",
+        tagName: "code",
+        children: [{ kind: "text", text: "commitIndex" }],
+      },
+    ],
+  },
+};
+
+export const PREVIEW_CHAPTER_NODES: ChapterDocumentNode[] = [
+  { kind: "segment", domPath: "seg-0", tagName: "h1", id: "ch2-top" },
+  { kind: "segment", domPath: "seg-1", tagName: "p" },
+  {
+    kind: "element",
+    tagName: "figure",
+    children: [
+      {
+        kind: "element",
+        tagName: "svg",
+        attrs: {
+          viewBox: "0 0 560 118",
+          width: "560",
+          height: "118",
+        },
+        children: [
+          {
+            kind: "element",
+            tagName: "rect",
+            attrs: {
+              x: "16",
+              y: "24",
+              width: "136",
+              height: "56",
+              rx: "8",
+              fill: "none",
+              stroke: "currentColor",
+              strokeWidth: "1.5",
+              opacity: "0.45",
+            },
+            children: [],
+          },
+          {
+            kind: "element",
+            tagName: "text",
+            attrs: { x: "84", y: "57", textAnchor: "middle", fontSize: "13", fill: "currentColor" },
+            children: [{ kind: "text", text: "Leader Log" }],
+          },
+          {
+            kind: "element",
+            tagName: "line",
+            attrs: {
+              x1: "152",
+              y1: "52",
+              x2: "212",
+              y2: "52",
+              stroke: "currentColor",
+              strokeWidth: "1.5",
+              opacity: "0.45",
+            },
+            children: [],
+          },
+          {
+            kind: "element",
+            tagName: "rect",
+            attrs: {
+              x: "212",
+              y: "24",
+              width: "136",
+              height: "56",
+              rx: "8",
+              fill: "none",
+              stroke: "currentColor",
+              strokeWidth: "1.5",
+              opacity: "0.7",
+            },
+            children: [],
+          },
+          {
+            kind: "element",
+            tagName: "text",
+            attrs: { x: "280", y: "57", textAnchor: "middle", fontSize: "13", fill: "currentColor" },
+            children: [{ kind: "text", text: "Quorum ACK" }],
+          },
+          {
+            kind: "element",
+            tagName: "line",
+            attrs: {
+              x1: "348",
+              y1: "52",
+              x2: "408",
+              y2: "52",
+              stroke: "currentColor",
+              strokeWidth: "1.5",
+              opacity: "0.45",
+            },
+            children: [],
+          },
+          {
+            kind: "element",
+            tagName: "rect",
+            attrs: {
+              x: "408",
+              y: "24",
+              width: "136",
+              height: "56",
+              rx: "8",
+              fill: "none",
+              stroke: "currentColor",
+              strokeWidth: "1.5",
+              opacity: "0.45",
+            },
+            children: [],
+          },
+          {
+            kind: "element",
+            tagName: "text",
+            attrs: { x: "476", y: "57", textAnchor: "middle", fontSize: "13", fill: "currentColor" },
+            children: [{ kind: "text", text: "Commit Index" }],
+          },
+        ],
+      },
+      {
+        kind: "element",
+        tagName: "figcaption",
+        children: [{ kind: "text", text: "Figure 2.1 — Majority acknowledgment before advancing commitIndex" }],
+      },
+    ],
+  },
+  {
+    kind: "element",
+    tagName: "pre",
+    children: [
+      {
+        kind: "element",
+        tagName: "code",
+        children: [
+          {
+            kind: "text",
+            text: "if (acks.count >= Math.floor(cluster.size / 2) + 1) {\n  raft.commitIndex = Math.max(raft.commitIndex, entry.index);\n}",
+          },
+        ],
+      },
+    ],
+  },
+  { kind: "segment", domPath: "seg-2", tagName: "p" },
+  {
+    kind: "element",
+    tagName: "blockquote",
+    children: [{ kind: "segment", domPath: "seg-3", tagName: "p" }],
+  },
+  { kind: "segment", domPath: "seg-4", tagName: "p" },
+  { kind: "element", tagName: "hr", children: [] },
+  {
+    kind: "element",
+    tagName: "aside",
+    attrs: { id: "fn1" },
+    children: [{ kind: "segment", domPath: "seg-5", tagName: "p" }],
   },
 ];
 
