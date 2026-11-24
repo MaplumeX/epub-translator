@@ -1,0 +1,237 @@
+/* Warm Editorial / Bookbinding design tokens.
+ * Dark mode swaps semantic aliases only (never pure #000000 or filter: invert()).
+ * See ADR 2026-11-24-warm-editorial-design-system.
+ */
+
+:root {
+  /* Raw 9-step color ramps (derived via generate_ramp.py) */
+  --color-neutral-100: #f9f8f6;
+  --color-neutral-200: #dfd9d1;
+  --color-neutral-300: #c4baae;
+  --color-neutral-400: #a79b8c;
+  --color-neutral-500: #897c6c;
+  --color-neutral-600: #706555;
+  --color-neutral-700: #564d40;
+  --color-neutral-800: #3c352b;
+  --color-neutral-900: #211d17;
+
+  --color-primary-100: #fcf4ee;
+  --color-primary-200: #f0ccb8;
+  --color-primary-300: #e2a184;
+  --color-primary-400: #d47250;
+  --color-primary-500: #b44a2e;
+  --color-primary-600: #993825;
+  --color-primary-700: #7d281d;
+  --color-primary-800: #601a15;
+  --color-primary-900: #430f0e;
+
+  --color-success-100: #ecf9f4;
+  --color-success-200: #b2e4d0;
+  --color-success-300: #79cea9;
+  --color-success-400: #44b47e;
+  --color-success-500: #2f7a53;
+  --color-success-600: #286b45;
+  --color-success-700: #225c39;
+  --color-success-800: #1b4c2d;
+  --color-success-900: #153d21;
+
+  --color-warning-100: #fcf9e8;
+  --color-warning-200: #f4e4ad;
+  --color-warning-300: #eac874;
+  --color-warning-400: #dfa63a;
+  --color-warning-500: #b7791f;
+  --color-warning-600: #9d5f19;
+  --color-warning-700: #834814;
+  --color-warning-800: #68330f;
+  --color-warning-900: #4d210a;
+
+  --color-danger-100: #fbf0ee;
+  --color-danger-200: #efc0ba;
+  --color-danger-300: #e28e88;
+  --color-danger-400: #d35b57;
+  --color-danger-500: #b83232;
+  --color-danger-600: #9c2828;
+  --color-danger-700: #7e1f1f;
+  --color-danger-800: #611717;
+  --color-danger-900: #430f0f;
+
+  --color-info-100: #f0f6fa;
+  --color-info-200: #bcd3e5;
+  --color-info-300: #89aed0;
+  --color-info-400: #5687ba;
+  --color-info-500: #3b608c;
+  --color-info-600: #314f78;
+  --color-info-700: #284064;
+  --color-info-800: #1f3050;
+  --color-info-900: #16223b;
+
+  /* Semantic tokens — Light mode */
+  --surface: var(--color-neutral-100);
+  --surface-raised: #ffffff;
+  --surface-sunken: #f2efe9;
+  --surface-hover: #efeae2;
+  --surface-scrim: rgba(33, 29, 23, 0.42);
+
+  --text: var(--color-neutral-900);
+  --text-secondary: var(--color-neutral-700);
+  --text-muted: var(--color-neutral-600);
+
+  --border: var(--color-neutral-200);
+  --border-strong: var(--color-neutral-300);
+
+  --accent: var(--color-primary-500);
+  --accent-hover: var(--color-primary-600);
+  --accent-subtle: var(--color-primary-100);
+  --accent-border: var(--color-primary-200);
+  --accent-text: var(--color-primary-600);
+  --accent-fg: #ffffff;
+
+  --status-success-bg: var(--color-success-100);
+  --status-success-border: var(--color-success-500);
+  --status-success-outline: var(--color-success-200);
+  --status-success-fg: var(--color-success-800);
+
+  --status-warning-bg: var(--color-warning-100);
+  --status-warning-border: var(--color-warning-500);
+  --status-warning-outline: var(--color-warning-200);
+  --status-warning-fg: var(--color-warning-800);
+
+  --status-danger-bg: var(--color-danger-100);
+  --status-danger-border: var(--color-danger-500);
+  --status-danger-outline: var(--color-danger-200);
+  --status-danger-fg: var(--color-danger-700);
+  --status-danger-solid: var(--color-danger-500);
+  --status-danger-solid-hover: var(--color-danger-600);
+  --status-danger-solid-fg: #ffffff;
+
+  --status-info-bg: var(--color-info-100);
+  --status-info-border: var(--color-info-500);
+  --status-info-outline: var(--color-info-200);
+  --status-info-fg: var(--color-info-800);
+
+  --focus-ring: var(--accent);
+  --disabled-bg: var(--color-neutral-200);
+  --disabled-fg: var(--color-neutral-600);
+
+  --code-bg: #f1ede6;
+  --code-border: var(--color-neutral-200);
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-serif: "Source Serif 4", "Songti SC", "Noto Serif SC", Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+
+  --leading-heading: 1.2;
+  --leading-ui: 1.35;
+  --leading-source: 1.62;
+  --leading-cjk: 1.72;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Control heights & layout measures */
+  --control-sm: 32px;
+  --control-md: 38px;
+  --control-lg: 44px;
+  --sidebar-width: 280px;
+  --measure-reading: 780px;
+  --measure-empty: 520px;
+
+  /* Active radii (strictly 2 steps) */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(33, 29, 23, 0.08);
+  --shadow-md: 0 4px 12px rgba(33, 29, 23, 0.10), 0 1px 3px rgba(33, 29, 23, 0.06);
+  --shadow-lg: 0 12px 28px rgba(33, 29, 23, 0.16), 0 2px 6px rgba(33, 29, 23, 0.08);
+  --shadow-inset: inset 0 1px 2px rgba(33, 29, 23, 0.07);
+
+  /* z-index layers */
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-popover: 20;
+  --z-overlay: 30;
+  --z-modal: 40;
+  --z-toast: 50;
+
+  /* Motion */
+  --dur-fast: 150ms;
+  --dur-med: 220ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+}
+
+[data-theme="dark"] {
+  --surface: var(--color-neutral-900);
+  --surface-raised: var(--color-neutral-800);
+  --surface-sunken: #191611;
+  --surface-hover: #473f34;
+  --surface-scrim: rgba(15, 13, 10, 0.68);
+
+  --text: var(--color-neutral-100);
+  --text-secondary: var(--color-neutral-200);
+  --text-muted: var(--color-neutral-300);
+
+  --border: var(--color-neutral-700);
+  --border-strong: var(--color-neutral-600);
+
+  --accent: var(--color-primary-400);
+  --accent-hover: var(--color-primary-300);
+  --accent-subtle: var(--color-primary-900);
+  --accent-border: var(--color-primary-700);
+  --accent-text: var(--color-primary-300);
+  --accent-fg: var(--color-neutral-900);
+
+  --status-success-bg: var(--color-success-900);
+  --status-success-border: var(--color-success-500);
+  --status-success-outline: var(--color-success-700);
+  --status-success-fg: var(--color-success-200);
+
+  --status-warning-bg: var(--color-warning-900);
+  --status-warning-border: var(--color-warning-500);
+  --status-warning-outline: var(--color-warning-700);
+  --status-warning-fg: var(--color-warning-200);
+
+  --status-danger-bg: var(--color-danger-900);
+  --status-danger-border: var(--color-danger-500);
+  --status-danger-outline: var(--color-danger-700);
+  --status-danger-fg: var(--color-danger-200);
+  --status-danger-solid: var(--color-danger-300);
+  --status-danger-solid-hover: var(--color-danger-200);
+  --status-danger-solid-fg: var(--color-neutral-900);
+
+  --status-info-bg: var(--color-info-900);
+  --status-info-border: var(--color-info-500);
+  --status-info-outline: var(--color-info-700);
+  --status-info-fg: var(--color-info-200);
+
+  --focus-ring: var(--accent);
+  --disabled-bg: #2e2922;
+  --disabled-fg: var(--color-neutral-400);
+
+  --code-bg: #2c261f;
+  --code-border: var(--color-neutral-700);
+
+  /* Dark mode uses lighter raised surfaces + 1px borders instead of heavy shadows */
+  --shadow-sm: none;
+  --shadow-md: 0 4px 16px rgba(10, 8, 6, 0.35);
+  --shadow-lg: 0 14px 32px rgba(10, 8, 6, 0.5);
+  --shadow-inset: inset 0 1px 2px rgba(10, 8, 6, 0.35);
+}
