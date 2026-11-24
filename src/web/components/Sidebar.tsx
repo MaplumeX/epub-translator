@@ -1,11 +1,10 @@
-import { useRef } from "react";
 import {
   AlertCircle,
+  ArrowLeft,
   BookOpen,
   CheckCircle2,
   Circle,
   Loader2,
-  Plus,
   Settings,
   X,
 } from "lucide-react";
@@ -20,12 +19,11 @@ interface SidebarProps {
   activeChapterId: string | null;
   activeProvider: ProviderPresetPublic | null;
   theme: ThemeMode;
-  uploading: boolean;
   mobileOpen: boolean;
   onToggleTheme: () => void;
+  onBackToLibrary: () => void;
   onSelectBook: (bookId: string) => void;
   onSelectChapter: (chapterId: string) => void;
-  onUploadFile: (file: File) => void;
   onOpenSettings: () => void;
   onCloseMobile: () => void;
 }
@@ -52,16 +50,14 @@ export function Sidebar({
   activeChapterId,
   activeProvider,
   theme,
-  uploading,
   mobileOpen,
   onToggleTheme,
+  onBackToLibrary,
   onSelectBook,
   onSelectChapter,
-  onUploadFile,
   onOpenSettings,
   onCloseMobile,
 }: SidebarProps) {
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const isLocal = Boolean(activeProvider && /localhost|127\.0\.0\.1/.test(activeProvider.baseUrl));
   const providerReady = Boolean(activeProvider && (activeProvider.hasApiKey || isLocal));
 
@@ -89,15 +85,30 @@ export function Sidebar({
           </div>
         </div>
 
-        <div className="sidebar-library">
+        <div className="sidebar-library-stack">
+          <button
+            type="button"
+            className="btn btn-tertiary btn-sm sidebar-back-btn"
+            onClick={() => {
+              onBackToLibrary();
+              onCloseMobile();
+            }}
+          >
+            <ArrowLeft size={14} aria-hidden="true" />
+            <span className="tabular-nums">全部书籍（{books.length}）</span>
+          </button>
+
           <label htmlFor="book-switcher" className="sr-only">
-            切换书籍
+            快速切换书籍
           </label>
           <select
             id="book-switcher"
             className="field-select book-select"
             value={activeBookId ?? ""}
-            onChange={(e) => onSelectBook(e.target.value)}
+            onChange={(e) => {
+              onSelectBook(e.target.value);
+              onCloseMobile();
+            }}
             aria-label="当前书籍"
           >
             {books.map((b) => (
@@ -106,28 +117,6 @@ export function Sidebar({
               </option>
             ))}
           </select>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".epub,application/epub+zip"
-            className="sr-only"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) onUploadFile(f);
-              e.target.value = "";
-            }}
-          />
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}
-            title="导入新的 EPUB 电子书"
-          >
-            <Plus size={14} aria-hidden="true" />
-            <span>{uploading ? "解析中" : "导入"}</span>
-          </button>
         </div>
 
         <div className="sidebar-section-label">
